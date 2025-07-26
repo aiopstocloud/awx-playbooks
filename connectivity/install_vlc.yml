@@ -1,0 +1,61 @@
+---
+
+- name: Install VLC on Windows target via WinRM
+
+  hosts: all
+
+  gather_facts: false
+
+  tasks:
+
+    - name: Ensure Temp directory exists
+
+      win_file:
+
+        path: C:\\Temp
+
+        state: directory
+
+
+
+    - name: Download VLC installer
+
+      win_get_url:
+
+        url: https://get.videolan.org/vlc/3.0.20/win64/vlc-3.0.20-win64.exe
+
+        dest: C:\\Temp\\vlc.exe
+
+
+
+    - name: Install VLC silently
+
+      win_package:
+
+        path: C:\\Temp\\vlc.exe
+
+        arguments: /S
+
+        product_id: VLC media player
+
+
+
+    - name: Write install log file
+
+      win_lineinfile:
+
+        path: C:\\Temp\\vlc_installed.txt
+
+        line: "VLC installed successfully via Ansible at {{ ansible_date_time.iso8601 }}"
+
+        create: yes
+
+
+
+    - name: Copy log to DC shared folder
+
+      win_copy:
+
+        src: C:\\Temp\\vlc_installed.txt
+
+        dest: \\\\dc01\\E$\\Dynatrace\\logs\\vlc_install_{{ inventory_hostname }}.log
