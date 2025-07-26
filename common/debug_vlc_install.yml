@@ -1,0 +1,91 @@
+---
+- name: Debug VLC Installation Issues
+  hosts: all
+  gather_facts: yes
+
+  tasks:
+    - name: Test basic connectivity
+      win_ping:
+
+    - name: Check current user context
+      win_shell: |
+        Write-Output "Current User: $env:USERNAME"
+        Write-Output "User Domain: $env:USERDOMAIN"
+        Write-Output "Is Admin: $((New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator))"
+      register: user_context
+
+    - name: Display user context
+      debug:
+        var: user_context.stdout_lines
+
+    - name: Check temp directory access
+      win_file:
+        path: C:\temp
+        state: directory
+      register: temp_dir_result
+
+    - name: Test temp directory write access
+      win_copy:
+        content: "Test file"
+        dest: C:\temp\test_write.txt
+      register: write_test
+
+    - name: Check if write succeeded
+      debug:
+        msg: "Write test: {{ 'SUCCESS' if write_test is succeeded else 'FAILED' }}"
+
+    - name: Test internet connectivity
+      win_shell: |
+        try {
+          $response = Invoke-WebRequest -Uri "https://get.videolan.org" -UseBasicParsing -TimeoutSec 30
+          Write-Output "Internet access: SUCCESS - Status $($response.StatusCode)"
+        } catch {
+          Write-Output "Internet access: FAILED - $($_.Exception.Message)"
+        }
+      register: internet_test
+
+    - name: Display internet test
+      debug:
+        var: internet_test.stdout_lines
+
+    - name: Check for existing VLC
+      win_stat:
+        path: "C:\\Program Files\\VideoLAN\\VLC\\vlc.exe"
+      register: vlc_check
+
+    - name: Display VLC status
+      debug:
+        msg: "VLC already installed: {{ vlc_check.stat.exists }}"
+
+    - name: Test manual download (small file)
+      win_get_url:
+        url: "https://www.google.com/robots.txt"
+        dest: "C:\\temp\\test_download.txt"
+        timeout: 30
+      register: download_test
+
+    - name: Check download test
+      debug:
+        msg: "Download test: {{ 'SUCCESS' if download_test is succeeded else 'FAILED' }}"
+
+    - name: Check Windows version and compatibility
+      win_shell: |
+        $os = Get-WmiObject Win32_OperatingSystem
+        Write-Output "OS: $($os.Caption)"
+        Write-Output "Version: $($os.Version)"
+        Write-Output "Architecture: $($os.OSArchitecture)"
+        Write-Output "Service Pack: $($os.ServicePackMajorVersion).$($os.ServicePackMinorVersion)"
+      register: os_info
+
+    - name: Display OS information
+      debug:
+        var: os_info.stdout_lines
+
+    - name: Cleanup test files
+      win_file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - C:\temp\test_write.txt
+        - C:\temp\test_download.txt
+      failed_when: false
