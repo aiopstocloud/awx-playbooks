@@ -1,0 +1,4 @@
+# Add to Git
+git add .
+git commit -m "Add Dynatrace Linux installation playbook"
+git push origin main
