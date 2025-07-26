@@ -1,20 +1,53 @@
+
 ---
 
-- name: Install VLC on Windows target via WinRM
+- name: Install VLC Media Player
 
   hosts: all
 
-  gather_facts: false
+  gather_facts: no
+
+
+
+  vars:
+
+    vlc_version: "3.0.20"
+
+    temp_dir: "C:\\temp"
+
+    installer_path: "{{ temp_dir }}\\vlc-installer.exe"
+
+
 
   tasks:
 
-    - name: Ensure Temp directory exists
+    - name: Create temporary directory
 
       win_file:
 
-        path: C:\\Temp
+        path: "{{ temp_dir }}"
 
         state: directory
+
+
+
+    - name: Check if VLC is already installed
+
+      win_stat:
+
+        path: "C:\\Program Files\\VideoLAN\\VLC\\vlc.exe"
+
+      register: vlc_check
+
+
+
+    - name: Skip installation if VLC exists
+
+      debug:
+
+        msg: "VLC is already installed, skipping download and installation"
+
+      when: vlc_check.stat.exists
 
 
 
@@ -22,40 +55,35 @@
 
       win_get_url:
 
-        url: https://get.videolan.org/vlc/3.0.20/win64/vlc-3.0.20-win64.exe
+        url: "https://get.videolan.org/vlc/{{ vlc_version }}/win64/vlc-{{ vlc_version }}-win64.exe"
 
-        dest: C:\\Temp\\vlc.exe
+        dest: "{{ installer_path }}"
+
+        timeout: 300
+
+      when: not vlc_check.stat.exists
 
 
 
     - name: Install VLC silently
-
       win_package:
+        path: "{{ installer_path }}"
+        arguments: "/S"
+        state: present
+      when: not vlc_check.stat.exists
+      register: install_result
 
-        path: C:\\Temp\\vlc.exe
+    - name: Verify installation
+      win_stat:
+        path: "C:\\Program Files\\VideoLAN\\VLC\\vlc.exe"
+      register: vlc_installed
 
-        arguments: /S
+    - name: Display installation result
+      debug:
+        msg: "VLC installation {{ 'successful' if vlc_installed.stat.exists else 'failed' }}"
 
-        product_id: VLC media player
-
-
-
-    - name: Write install log file
-
-      win_lineinfile:
-
-        path: C:\\Temp\\vlc_installed.txt
-
-        line: "VLC installed successfully via Ansible at {{ ansible_date_time.iso8601 }}"
-
-        create: yes
-
-
-
-    - name: Copy log to DC shared folder
-
-      win_copy:
-
-        src: C:\\Temp\\vlc_installed.txt
-
-        dest: \\\\dc01\\E$\\Dynatrace\\logs\\vlc_install_{{ inventory_hostname }}.log
+    - name: Cleanup installer
+      win_file:
+        path: "{{ installer_path }}"
+        state: absent
+      when: not vlc_check.stat.exists
