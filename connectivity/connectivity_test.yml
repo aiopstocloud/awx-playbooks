@@ -1,3 +1,4 @@
+
 ---
 
 - name: Test Windows Connectivity
@@ -15,6 +16,7 @@
       win_ping:
 
 
+
     - name: Get system information
 
       win_shell: |
@@ -25,9 +27,8 @@
 
         Write-Output "Domain: $env:USERDOMAIN"
 
-        Write-Output "OS: $((Get-WmiObject Win32_OperatingSystem).Caption)"
+           register: system_info
 
-      register: system_info
 
 
     - name: Display system information
@@ -35,3 +36,4 @@
       debug:
 
         var: system_info.stdout_lines
+
