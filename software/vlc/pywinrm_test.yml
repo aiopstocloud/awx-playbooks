@@ -1,0 +1,14 @@
+---
+- name: Test if pywinrm is installed
+
+  hosts: localhost
+
+  gather_facts: no
+
+  tasks:
+
+    - name: Check if pywinrm is available
+
+      ansible.builtin.command: python3 -c "import winrm"
+
+
