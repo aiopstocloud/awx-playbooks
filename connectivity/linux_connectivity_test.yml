@@ -1,0 +1,31 @@
+---
+
+- name: Test Linux Connectivity
+
+  hosts: linux_servers
+
+  gather_facts: yes
+
+  tasks:
+
+    - name: Ping test
+
+      ping:
+
+
+
+    - name: Show basic system info
+
+      debug:
+
+        msg:
+
+          - "Host: {{ inventory_hostname }}"
+
+          - "IP: {{ ansible_default_ipv4.address | default('n/a') }}"
+
+          - "OS: {{ ansible_distribution }} {{ ansible_distribution_version }}"
+
+          - "Kernel: {{ ansible_kernel }}"
+
+
